@@ -82,3 +82,24 @@ os.path.split() #将路径根据最后一个‘/’分割为两部分
 
 
 
+### 4.单进程Copy文件
+
+`with`即使出现异常,也可以关闭已经打开的文件句柄
+
+```python
+import os
+
+def fileCopy(sourcePath,targetPath):
+
+    with open(sourcePath,"rb+") as fr:
+        with open(targetPath,"wb+") as tar:
+            fr2=fr.read()
+            tar.write(fr2)
+    print("Copy End")
+
+sDir="/Users/dony15/Desktop/jianghu.png"
+tDir="/Users/dony15/Desktop/new_jianghu.png"
+
+fileCopy(sDir,tDir)
+```
+
