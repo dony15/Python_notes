@@ -41,14 +41,20 @@ url前如果用r标注,则表示url中,字符串不会进行正则转义(特殊�
 
 
 
-##### 视图参数
+### 2.流程
+
+![](https://ws2.sinaimg.cn/large/006tNbRwgy1fykh5svpsdj30u00u0wl8.jpg)
+
+
+
+### 3.视图参数HttpRequest
 
 1. `Httprequest`实例
 2. 其他参数(url正则中定义的参数)
 
+------
 
-
-Httprequest
+##### Httprequest
 
 Django接收到Http请求后,会根据报文创建一个HttpRequest对象,该对象默认为视图的第一个参数
 
@@ -76,17 +82,153 @@ getlist(key) #列表的形式获取key对应的值,如http://localhost:8000?a=1&
 
 
 
-##### 视图响应
+### 4.视图响应HttpResponse
 
-Hpptresponse
+##### 4-1.httpresponse 响应JSON
+
+```python
+#属性列表
+content 响应内容
+content-Type 响应MIME类型,如 text/html
+status_code 响应状态码,如200 302等
+charset 响应编码
+```
+
+
+
+```python
+#方法列表
+init() 使用页面内容,实例化HttpResponse对象
+write(content) 文件的形式响应内容
+flush() 文件的形式刷新缓冲区
+set_cookie(key,value="",max_age=None,exprise=None) 设置cookie
+delete_cookie(key) 删除cookie,cookie不存在时不生效
+```
+
+
+
+##### 4-2.render
+
+响应页面(模版)+数据,返回完整的html
+
+render(request,template[,content])
+
+`request`请求远行
+
+`template` 模版页面
+
+`content` 渲染内容
+
+------
+
+##### 4-3.HttpResponseRedict
+
+重定向
+
+简写`redirect(重定向页面)`
+
+
+
+------
+
+##### 4-4.JsonResponse
+
+返回JSON,一般异步ajax使用
+
+数据为dict字典形式存储
+
+Content-Type默认application/json类型
+
+
+
+### 5.状态保存
+
+##### 5-1.存储位置
+
+1. cookie
+2. session
+
+
+
+##### 5-2.启用session
+
+settings.py中默认启用
+
+```python
+INSTALLED_APPS = [
+    'django.contrib.sessions'
+]
+
+MIDDLEWARE = [ #中间件
+    'django.contrib.sessions.middleware.SessionMiddleware'
+]
+```
+
+
+
+##### 5-3.使用session
+
+启用session后,每个HttpRequest对象都有session属性,一个类似字典对象
+
+```python
+session['Dony15']="session_value" #设置session
+get(key,default=None) #根据key获取session值,如果获取不到,则使用默认值
+clear() #清空session
+flush() #删除当前会话,并删除对应cookie
+```
+
+
+
+**logout()** 
+
+删除当前会话登出,并删除对应cookie ,推荐使用,该方法是单独封装logout模块,并非session方法
+
+
+
+##### 5-4.设置session
+
+```python
+set_expiry(value) #设置过期时间(单位秒),默认两个星期 ,0关闭浏览器失效,None永不过期
+```
+
+
+
+##### 5-5.存储session
+
+默认数据库`Django_session表中`
+
+
+
+`setting.py`中配置session引擎(SESSION_ENGINE)
+
+```python
+SESSION_ENGINE="django.contrib.session.backends.db" #默认启动,存在数据库中
+
+SESSION_ENGINE="django.contrib.session.backends.cache" #存储到本地缓存中
+
+SESSION_ENGINE="django.contrib.session.backends.cached_db" #存储到本地缓存和数据库中,优先本地查询
+```
+
+
+
+##### 5-6.redis缓存session,分布式可用
+
+```python
+SESSION_ENGINE = 'redis_sessions.session'
+SESSION_REDIS_HOST = 'localhost'
+SESSION_REDIS_PORT = 6379
+SESSION_REDIS_DB = 0
+SESSION_REDIS_PASSWORD = '123456'
+SESSION_REDIS_PREFIX = 'session'
+```
 
 
 
 
 
-##### 错误页面
+### 6.错误页面
 
-`setting.py`配置
+##### `setting.py`配置
 
 
 
@@ -97,13 +239,13 @@ ALLOWED_HOSTS = [’*‘] #允许访问的ip,此处*表示所有人都可以访�
 
 
 
-`404`
+##### `404`
 
 页面写在templates中,404.html
 
 `request_path`:自动匹配用户访问的url,不需要函数再次实现
 
-```
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -116,16 +258,4 @@ ALLOWED_HOSTS = [’*‘] #允许访问的ip,此处*表示所有人都可以访�
 </body>
 </html>
 ```
-
-
-
-
-
-
-
-
-
-### 2.流程
-
-![](https://ws2.sinaimg.cn/large/006tNbRwgy1fykh5svpsdj30u00u0wl8.jpg)
 
