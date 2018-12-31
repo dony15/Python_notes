@@ -221,9 +221,233 @@ ajax其他都是通用流程,此处不再介绍
 
 ### 6.富文本
 
+##### 安装tinymce
+
+```shell
+#在项目doc中安装tinymce才能生效
+pip install django-tinymce
+```
+
+
+
+##### settings.py
+
+```python
+#引入tinymce应用
+INSTALLED_APPS=[
+    'tinymce'
+]
+#增加tinymce配置
+TINYMCE_DEFAUTLE_CONFIG={ #tinymce配置
+    'theme':'advanced', #所有功能全开
+    'width':600,
+    'height':400
+}
+```
+
+
+
+##### 数据迁移
+
+```shell
+python3 manage.py makemigrations
+python3 manage.py migrate
+```
+
+
+
+##### html
+
+引入tinymce.js模块
+
+```html
+    <script type="text/javascript" src="/static/tiny_mce/tiny_mce.js"></script>
+    <script type="text/javascript">
+        tinyMCE.init({
+            'mode':'textareas',
+            'theme':'advanced',
+            'width':800,
+            'height':600,
+        })
+    </script>
+    
+<body>
+    <form action="/cityDesc/input_text" method="post">
+        <textarea name="str">请输入信息...</textarea>
+        <input type="submit" value="提交"/>
+    </form>
+</body>
+```
+
+
+
+##### 配置view和url
+
+普通流程,省略...
+
+
+
+##### 站点配置
+
+如果需要站点使用,注册到admin.py中即可使用站点管理富文本
+
 
 
 ### 7.celery
 
+#### 概念
+
+异步任务组件,可以异步处理数据,也可以定时任务分发,类似于java的Quartz
+
+#### 目的
+
+1. 异步处理耗时操作,优化用户体验,如用户注册时发送邮箱业务
+2. 网站每隔一段时间同步数据(不需要用户刷新页面)
 
 
+
+#### 组成
+
+1. 任务(task) :python函数,业务逻辑
+2. 队列(queue): 要执行的任务放在队列中
+3. 工人(worker):执行任务
+4. 代理(broker):任务调度,部署环境中使用redis
+
+
+
+
+
+#### 基础配置
+
+---
+
+##### 安装
+
+```
+pip install celery
+pip install celery-with-redis
+pip install django-celery
+```
+
+
+
+##### Settings.py
+
+```
+#引入celery应用
+INSTALLED_APPS=[
+    ‘djcelery’
+]
+
+#初始化队列
+import djcelery
+djcelery.setup_loader() #初始化队列
+BROKER_URL="redis://176.122.166.178:6379/0" #使用redis初始化代理
+CELERY_IMPORTS=('myapp/task') #初始化导入任务
+```
+
+
+
+##### 数据迁移
+
+```
+python3 manage.py migrate
+```
+
+
+
+##### 工程目录创建celery.py文件
+
+```
+from __future__ import absolute_import
+
+import os
+from celery import Celery
+from django.conf import settings
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'whthas_home.settings')
+
+app = Celery('portal')
+
+app.config_from_object('django.conf:settings')
+app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+
+
+@app.task(bind=True)
+def debug_task(self):
+    print('Request: {0!r}'.format(self.request))
+```
+
+
+
+##### init.py中导入celery
+
+于mysql相同位置,全局导入
+
+```
+from .celery import app as celery_app
+```
+
+
+
+##### 配置流程总结
+
+> 1. settings.py中配置celery应用以及初始化信息
+> 2. celery.py创建配置文件
+> 3. init.py中导入配置文件信息初始化
+
+
+
+完成以上信息,celery基本配置完毕
+
+
+
+#### 基础使用
+
+---
+
+##### task任务
+
+应用创建task.py文件编写任务逻辑
+
+```python
+from celery import task
+import time
+
+@task
+def mytask():
+    print("开始Celery任务调度")
+    print("发送邮件中。。。")
+    time.sleep(5)
+    print("发送邮件完成")
+    print("结束Celery任务调度")
+```
+
+
+
+##### view使用
+
+```python
+from myapp.task import mytask
+
+def celery(request):
+    mytask.delay() #delay 添加到celery中执行，不会阻塞
+    return render(request,"myapp/index2.html")
+```
+
+
+
+##### 开启服务
+
+```shell
+#命令行输入
+python3 manage.py celery worker --loglevel=info
+```
+
+
+
+##### 使用流程总结
+
+> 1. 创建的task相当于Quartz中的任务
+> 2. python3.7不兼容celery 3.x版本,主要是异步属性的改变造成
+> 3. delay()是简单的加入celery中异步执行,还有更多高级异步操作
