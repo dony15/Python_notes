@@ -204,3 +204,36 @@ print(response.read().decode())
 print("搜索完成")
 ```
 
+
+
+### 5.UrlError异常
+
+
+
+##### urlError
+
+1. 无网络
+2. 服务器连接失败
+3. 找不到服务器
+
+
+
+##### httpError
+
+urlError的子类,一般路径错误时抛出该异常
+
+
+
+##### 使用
+
+```python
+try:
+	response=urllib.request.urlopen(req)
+except urllib.error.HTTPError as e:
+	print(e)
+except urllib.error.URLError as e:
+	print(e)
+```
+
+
+
